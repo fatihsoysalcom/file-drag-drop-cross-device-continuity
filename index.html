@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drag & Drop File Transfer</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f4f7f6;
+            color: #333;
+        }
+        #drop-zone {
+            width: 80%;
+            max-width: 600px;
+            height: 200px;
+            border: 3px dashed #007bff;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-size: 1.2em;
+            color: #007bff;
+            background-color: #e9f5ff;
+            transition: background-color 0.3s, border-color 0.3s;
+            margin-bottom: 20px;
+        }
+        #drop-zone.hover {
+            background-color: #d0eaff;
+            border-color: #0056b3;
+        }
+        #output {
+            width: 80%;
+            max-width: 600px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 20px;
+            text-align: left;
+        }
+        #output img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin-bottom: 15px;
+            border: 1px solid #eee;
+        }
+        #output pre {
+            white-space: pre-wrap;
+            word-break: break-all;
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            padding: 10px;
+            border-radius: 5px;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+        h2 {
+            color: #007bff;
+            margin-top: 0;
+        }
+        p {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Drag and Drop for Cross-Device Data</h1>
+    <div id="drop-zone">
+        <p>Drag & Drop a file here (e.g., image or text file)</p>
+    </div>
+    <div id="output">
+        <h2>File Content Preview</h2>
+        <div id="file-preview">
+            <p>No file dropped yet.</p>
+        </div>
+        <h2>Transferable Data (Base64)</h2>
+        <p>This Base64 string can be easily copied and transferred across devices or systems.</p>
+        <pre id="base64-output">No data.</pre>
+    </div>
+
+    <script>
+        const dropZone = document.getElementById('drop-zone');
+        const filePreview = document.getElementById('file-preview');
+        const base64Output = document.getElementById('base64-output');
+
+        // Prevent default drag behaviors
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+            document.body.addEventListener(eventName, preventDefaults, false); // For whole document
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        // Highlight drop zone when dragging over
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => dropZone.classList.add('hover'), false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => dropZone.classList.remove('hover'), false);
+        });
+
+        // Handle dropped files
+        dropZone.addEventListener('drop', handleDrop, false);
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+
+            if (files.length > 0) {
+                const file = files[0]; // Process only the first file
+                filePreview.innerHTML = ''; // Clear previous preview
+                base64Output.textContent = 'Loading...';
+
+                const reader = new FileReader();
+
+                reader.onload = function(event) {
+                    const dataUrl = event.target.result; // This is the base64 data URL
+
+                    // Display content preview
+                    if (file.type.startsWith('image/')) {
+                        const img = document.createElement('img');
+                        img.src = dataUrl;
+                        img.alt = file.name;
+                        filePreview.appendChild(img);
+                    } else if (file.type.startsWith('text/')) {
+                        const pre = document.createElement('pre');
+                        pre.textContent = event.target.result; // For text, display raw text
+                        filePreview.appendChild(pre);
+                    } else {
+                        filePreview.innerHTML = `<p>File: ${file.name} (${file.type}) - Cannot display preview.</p>`;
+                    }
+
+                    // Display the base64 representation for cross-device transfer
+                    // This is the core "continuity" aspect: a self-contained, portable data string.
+                    base64Output.textContent = dataUrl;
+                };
+
+                // Read the file as a Data URL (base64) for images and general transfer
+                // For text files, we'll also read it as text for preview, but Data URL is still useful for transfer
+                reader.readAsDataURL(file);
+            }
+        }
+    </script>
+</body>
+</html>
